@@ -2,7 +2,9 @@ package com.xhf.sms;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
 import android.net.Uri;
 import android.os.Bundle;
@@ -87,11 +89,11 @@ public class MainActivity extends AppCompatActivity {
             mMainBeans.add(mainBean);
         }
         mMainAdapter = new MainAdapter(mMainBeans);
-        mMainAdapter.setEnableLoadMore(true);
+        mRecyclerView.setLayoutManager(new StaggeredGridLayoutManager(2,StaggeredGridLayoutManager.VERTICAL));
         mRecyclerView.setAdapter(mMainAdapter);
-        mRecyclerView.setLayoutManager(new GridLayoutManager(this, 2));
-//        View footerView = LayoutInflater.from(this).inflate(R.layout.recycler_footer, null,false);
-//        mMainAdapter.setFooterView(footerView);
+
+        View footerView = LayoutInflater.from(this).inflate(R.layout.recycler_footer, null);
+        mMainAdapter.addFooterView(footerView);
 
 
     }
