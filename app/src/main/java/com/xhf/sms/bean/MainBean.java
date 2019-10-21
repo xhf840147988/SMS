@@ -2,9 +2,7 @@ package com.xhf.sms.bean;
 
 import java.security.spec.RSAOtherPrimeInfo;
 
-/**
- * Created by xhf on 2019/10/18
- */
+
 public class MainBean {
     private int imgUrl;
     private String price;

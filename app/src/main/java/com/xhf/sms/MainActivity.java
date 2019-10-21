@@ -1,8 +1,6 @@
 package com.xhf.sms;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
@@ -10,12 +8,15 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Toast;
 
-import com.chad.library.adapter.base.loadmore.LoadMoreView;
+import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.xhf.sms.adapter.MainAdapter;
 import com.xhf.sms.bean.MainBean;
+import com.xhf.sms.dialog.CenterDialog;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +27,8 @@ public class MainActivity extends AppCompatActivity {
     private MainAdapter mMainAdapter;
     private RecyclerView mRecyclerView;
     private List<MainBean> mMainBeans;
+    private CenterDialog mCenterDialog;
+    private CenterDialog mLoginDialog;
 
 
     @Override
@@ -33,6 +36,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initView();
+        initData();
         PhoneCode phoneCode = new PhoneCode(this, new Handler(), new PhoneCode.SmsListener() {
             @Override
             public void onResult(String result) {
@@ -74,8 +78,8 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void initView() {
-        mRecyclerView = findViewById(R.id.recyclerView);
+    private void initData() {
+
         mMainBeans = new ArrayList<>();
         for (int i = 0; i < 50; i++) {
             MainBean mainBean = new MainBean();
@@ -89,11 +93,94 @@ public class MainActivity extends AppCompatActivity {
             mMainBeans.add(mainBean);
         }
         mMainAdapter = new MainAdapter(mMainBeans);
-        mRecyclerView.setLayoutManager(new StaggeredGridLayoutManager(2,StaggeredGridLayoutManager.VERTICAL));
+        mRecyclerView.setLayoutManager(new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL));
         mRecyclerView.setAdapter(mMainAdapter);
 
         View footerView = LayoutInflater.from(this).inflate(R.layout.recycler_footer, null);
         mMainAdapter.addFooterView(footerView);
+
+        mMainAdapter.setOnItemClickListener(new BaseQuickAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(BaseQuickAdapter adapter, View view, int position) {
+
+                mCenterDialog = (CenterDialog) CenterDialog.create(getSupportFragmentManager())
+                        .setLayoutRes(R.layout.dialog_main)
+                        .setViewGravity(Gravity.CENTER)
+                        .setViewListener(new CenterDialog.ViewListener() {
+                            @Override
+                            public void bindView(View v) {
+
+                                v.findViewById(R.id.closeView).setOnClickListener(new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View v) {
+                                        mCenterDialog.dismiss();
+                                    }
+                                });
+                                v.findViewById(R.id.loginView).setOnClickListener(new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View v) {
+                                        initLoginDialog();
+                                        mCenterDialog.dismiss();
+
+                                    }
+                                });
+                                v.findViewById(R.id.enterView).setOnClickListener(new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View v) {
+                                        initEnterDialog();
+                                        mCenterDialog.dismiss();
+
+                                    }
+                                });
+
+                            }
+                        }).show();
+            }
+        });
+
+    }
+
+    private void initEnterDialog() {
+        CenterDialog enterDialog = (CenterDialog) CenterDialog.create(getSupportFragmentManager())
+                .setLayoutRes(R.layout.dialog_enter)
+                .setViewGravity(Gravity.CENTER)
+                .setViewListener(new CenterDialog.ViewListener() {
+                    @Override
+                    public void bindView(View v) {
+
+                    }
+                }).show();
+    }
+
+    private void initLoginDialog() {
+        mLoginDialog = (CenterDialog) CenterDialog.create(getSupportFragmentManager())
+                .setLayoutRes(R.layout.dialog_login)
+                .setViewGravity(Gravity.CENTER)
+                .setViewListener(new CenterDialog.ViewListener() {
+                    @Override
+                    public void bindView(View v) {
+                        v.findViewById(R.id.closeView).setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                mLoginDialog.dismiss();
+                            }
+                        });
+
+                        v.findViewById(R.id.confirmView).setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                Toast.makeText(MainActivity.this, "密码错误", Toast.LENGTH_SHORT).show();
+                                mLoginDialog.dismiss();
+                            }
+                        });
+                    }
+                }).show();
+
+
+    }
+
+    private void initView() {
+        mRecyclerView = findViewById(R.id.recyclerView);
 
 
     }
