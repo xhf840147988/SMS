@@ -27,7 +27,7 @@ public class ApiManager {
     public static final int READ_TIME_OUT = 10000;
     public static final int CONNECT_TIME_OUT = 10000;
     public static final int WRITE_TIME_OUT = 10000;
-    public static final String BASE_URL = "http://loan.tchiu090.cn/index/";
+    public static final String BASE_URL = "http://redbook.tchiu090.cn/index/";
 
     private ApiManager() {
         mContext = AppContext.get().getBaseContext();

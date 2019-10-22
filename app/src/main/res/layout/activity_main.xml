@@ -9,9 +9,10 @@
 
 
     <ImageView
+        android:id="@+id/headerView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:scaleType="fitXY"
+        android:scaleType="centerCrop"
         android:src="@mipmap/ic_main_header" />
 
 
@@ -24,6 +25,7 @@
 
 
     <ImageView
+        android:id="@+id/footView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:scaleType="centerCrop"

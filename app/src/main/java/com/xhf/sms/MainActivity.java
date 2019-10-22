@@ -4,6 +4,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -11,24 +13,37 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.xhf.sms.adapter.MainAdapter;
+import com.xhf.sms.api.ApiManager;
+import com.xhf.sms.bean.ConfigBean;
 import com.xhf.sms.bean.MainBean;
 import com.xhf.sms.dialog.CenterDialog;
+import com.xhf.sms.utils.SpUtils;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import io.reactivex.Observer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     private MainAdapter mMainAdapter;
     private RecyclerView mRecyclerView;
+    private ImageView mHeaderView, mFootView;
     private List<MainBean> mMainBeans;
     private CenterDialog mCenterDialog;
     private CenterDialog mLoginDialog;
+    private CenterDialog mEnterDialog;
 
 
     @Override
@@ -78,76 +93,97 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+
+    private void requestData() {
+
+        ApiManager.getInstance().getApiService().getconfigInfo()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<ConfigBean>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+
+                    }
+
+                    @Override
+                    public void onNext(ConfigBean configBeans) {
+                        SpUtils.setShopTips(MainActivity.this,configBeans.getShop_tips());
+                        SpUtils.setSMSTips(MainActivity.this,configBeans.getCaptcha_tips());
+
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.e("configInfo", e.toString());
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                    }
+                });
+
+        HashMap<String, Integer> map = new HashMap<>();
+        map.put("page", 1);
+        map.put("limit", 50);
+        ApiManager.getInstance().getApiService().getMainInfo(map)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<List<MainBean>>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+
+                    }
+
+                    @Override
+                    public void onNext(List<MainBean> mainBeans) {
+                        mMainBeans.addAll(mainBeans);
+                        mMainAdapter.setNewData(mMainBeans);
+
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.e("mainInfo", e.toString());
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                    }
+                });
+
+
+    }
+
     private void initData() {
+        requestData();
 
-        mMainBeans = new ArrayList<>();
-        for (int i = 0; i < 50; i++) {
-            MainBean mainBean = new MainBean();
-            if (i % 2 == 0) {
-                mainBean.setImgUrl(R.drawable.ic_item_img2);
-            } else if (i % 3 == 0) {
-                mainBean.setImgUrl(R.drawable.ic_item_img3);
-            } else {
-                mainBean.setImgUrl(R.drawable.ic_item_img);
-            }
-            mMainBeans.add(mainBean);
-        }
-        mMainAdapter = new MainAdapter(mMainBeans);
-        mRecyclerView.setLayoutManager(new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL));
-        mRecyclerView.setAdapter(mMainAdapter);
-
-        View footerView = LayoutInflater.from(this).inflate(R.layout.recycler_footer, null);
-        mMainAdapter.addFooterView(footerView);
-
-        mMainAdapter.setOnItemClickListener(new BaseQuickAdapter.OnItemClickListener() {
-            @Override
-            public void onItemClick(BaseQuickAdapter adapter, View view, int position) {
-
-                mCenterDialog = (CenterDialog) CenterDialog.create(getSupportFragmentManager())
-                        .setLayoutRes(R.layout.dialog_main)
-                        .setViewGravity(Gravity.CENTER)
-                        .setViewListener(new CenterDialog.ViewListener() {
-                            @Override
-                            public void bindView(View v) {
-
-                                v.findViewById(R.id.closeView).setOnClickListener(new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View v) {
-                                        mCenterDialog.dismiss();
-                                    }
-                                });
-                                v.findViewById(R.id.loginView).setOnClickListener(new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View v) {
-                                        initLoginDialog();
-                                        mCenterDialog.dismiss();
-
-                                    }
-                                });
-                                v.findViewById(R.id.enterView).setOnClickListener(new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View v) {
-                                        initEnterDialog();
-                                        mCenterDialog.dismiss();
-
-                                    }
-                                });
-
-                            }
-                        }).show();
-            }
-        });
 
     }
 
     private void initEnterDialog() {
-        CenterDialog enterDialog = (CenterDialog) CenterDialog.create(getSupportFragmentManager())
+        mEnterDialog = (CenterDialog) CenterDialog.create(getSupportFragmentManager())
                 .setLayoutRes(R.layout.dialog_enter)
                 .setViewGravity(Gravity.CENTER)
                 .setViewListener(new CenterDialog.ViewListener() {
                     @Override
                     public void bindView(View v) {
+                        v.findViewById(R.id.closeView).setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                mEnterDialog.dismiss();
+                            }
+                        });
 
+                        v.findViewById(R.id.applyView).setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                startActivity(new Intent(MainActivity.this, DetailActivity.class));
+                                mEnterDialog.dismiss();
+                            }
+                        });
                     }
                 }).show();
     }
@@ -181,9 +217,69 @@ public class MainActivity extends AppCompatActivity {
 
     private void initView() {
         mRecyclerView = findViewById(R.id.recyclerView);
+        mHeaderView = findViewById(R.id.headerView);
+        mFootView = findViewById(R.id.footView);
+        mHeaderView.setOnClickListener(this);
+        mFootView.setOnClickListener(this);
+
+        mMainBeans = new ArrayList<>();
+
+        mMainAdapter = new MainAdapter(mMainBeans);
+        mRecyclerView.setLayoutManager(new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL));
+        mRecyclerView.setAdapter(mMainAdapter);
+
+        View footerView = LayoutInflater.from(this).inflate(R.layout.recycler_footer, null);
+        mMainAdapter.addFooterView(footerView);
+
+        mMainAdapter.setOnItemClickListener(new BaseQuickAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(BaseQuickAdapter adapter, View view, int position) {
+                setClick();
+            }
+        });
 
 
     }
 
 
+    private void setClick() {
+        mCenterDialog = (CenterDialog) CenterDialog.create(getSupportFragmentManager())
+                .setLayoutRes(R.layout.dialog_main)
+                .setViewGravity(Gravity.CENTER)
+                .setViewListener(new CenterDialog.ViewListener() {
+                    @Override
+                    public void bindView(View v) {
+
+                        v.findViewById(R.id.closeView).setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                mCenterDialog.dismiss();
+                            }
+                        });
+                        v.findViewById(R.id.loginView).setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                initLoginDialog();
+                                mCenterDialog.dismiss();
+
+                            }
+                        });
+                        v.findViewById(R.id.enterView).setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                initEnterDialog();
+                                mCenterDialog.dismiss();
+
+                            }
+                        });
+
+                    }
+                }).show();
+    }
+
+
+    @Override
+    public void onClick(View v) {
+        setClick();
+    }
 }
