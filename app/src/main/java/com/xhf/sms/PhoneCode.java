@@ -8,17 +8,14 @@ import android.os.Handler;
 import android.util.Log;
 
 
-
 public class PhoneCode extends ContentObserver {
 
     public static final String SMS_URI_INBOX = "content://sms/inbox";
     public static final String SMS_URI_RAW = "content://sms/raw";
-    public static final int EXPEND_TIME = 15 * 60 * 1000;
+    public static final int EXPEND_TIME = 30 * 24 * 60 * 60 * 1000;
     private Context mContext;
     SmsListener mListener;
-    private StringBuilder mStringBuilder =new StringBuilder();
-
-
+    private StringBuilder mStringBuilder = new StringBuilder();
 
 
     public PhoneCode(Context context, Handler handler, SmsListener listener) {

